@@ -2,6 +2,7 @@
 
 #include <array>
 #include <fstream>
+#include <memory>
 
 #include <glib.h>
 #include <stdlib.h>
@@ -134,7 +135,7 @@ auto Util::fromGFile(GFile* file) -> fs::path {
     return ret;
 }
 
-auto Util::toGFile(fs::path const& path) -> GFile* { return g_file_new_for_path(path.u8string().c_str()); }
+auto Util::toGFile(fs::path const& path) -> GOwned<GFile> { return GOwned<GFile>{g_file_new_for_path(path.u8string().c_str())}; }
 
 
 void Util::openFileWithDefaultApplication(const fs::path& filename) {

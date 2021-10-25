@@ -36,6 +36,10 @@ class XojPageView;
 class InputHandler {
 public:
     InputHandler(XournalView* xournal, XojPageView* redrawable, const PageRef& page);
+    InputHandler(InputHandler const&) = delete;
+    InputHandler(InputHandler&&) = default;
+    InputHandler& operator=(InputHandler const&) = delete;
+    InputHandler& operator=(InputHandler&&) = default;
     virtual ~InputHandler();
 
 public:
@@ -63,7 +67,7 @@ public:
      * It is used to update internal data structures and queue
      * repaints of the XojPageView if necessary.
      */
-    virtual bool onKeyEvent(GdkEventKey* event) = 0;
+    virtual bool onKeyEvent(GdkEvent* event) = 0;
 
     /**
      * The current input device for stroken, do not react on other devices (linke mices)
@@ -119,6 +123,4 @@ protected:
     XojPageView* redrawable;
     PageRef page;
     Stroke* stroke;
-
-private:
 };

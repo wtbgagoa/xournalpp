@@ -48,6 +48,7 @@
 #include "config.h"
 #include "i18n.h"
 #include "pixbuf-utils.h"
+#include "safe_casts.h"
 
 using std::string;
 
@@ -358,14 +359,12 @@ auto XojPageView::onButtonPressEvent(const PositionInputData& pos) -> bool {
         ImageHandler imgHandler(control, this);
         imgHandler.insertImage(x, y);
     } else if (h->getToolType() == TOOL_FLOATING_TOOLBOX) {
-        gint wx = 0, wy = 0;
         GtkWidget* widget = xournal->getWidget();
-        gtk_widget_translate_coordinates(widget, gtk_widget_get_toplevel(widget), 0, 0, &wx, &wy);
-
-        wx += std::lround(pos.x) + this->getX();
-        wy += std::lround(pos.y) + this->getY();
-
-        control->getWindow()->floatingToolbox->show(wx, wy);
+        double wx, wy;  //    NOLINT(cppcoreguidelines-init-variables)
+        gtk_widget_translate_coordinates(widget, GTK_WIDGET(gtk_widget_get_native(widget)), 0, 0, &wx, &wy);
+        wx += pos.x + this->getX();
+        wy += pos.y + this->getY();
+        control->getWindow()->floatingToolbox->show(round_cast<int>(wx), round_cast<int>(wy));
     }
 
     return true;
@@ -508,12 +507,12 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
 
             if (doAction)  // pop up a menu
             {
-                gint wx = 0, wy = 0;
                 GtkWidget* widget = xournal->getWidget();
-                gtk_widget_translate_coordinates(widget, gtk_widget_get_toplevel(widget), 0, 0, &wx, &wy);
-                wx += std::lround(pos.x + this->getX());
-                wy += std::lround(pos.y + this->getY());
-                control->getWindow()->floatingToolbox->show(wx, wy);
+                double wx, wy;  //    NOLINT(cppcoreguidelines-init-variables)
+                gtk_widget_translate_coordinates(widget, GTK_WIDGET(gtk_widget_get_native(widget)), 0, 0, &wx, &wy);
+                wx += pos.x + this->getX();
+                wy += pos.y + this->getY();
+                control->getWindow()->floatingToolbox->show(round_cast<int>(wx), round_cast<int>(wy));
             }
         }
 
@@ -562,9 +561,9 @@ auto XojPageView::onButtonReleaseEvent(const PositionInputData& pos) -> bool {
     return false;
 }
 
-auto XojPageView::onKeyPressEvent(GdkEventKey* event) -> bool {
+auto XojPageView::onKeyPressEvent(GdkEvent* event) -> bool {
     // Esc leaves text edition
-    if (event->keyval == GDK_KEY_Escape) {
+    if (gdk_key_event_get_keyval(event) == GDK_KEY_Escape) {
         if (this->textEditor) {
             endText();
             return true;
@@ -590,7 +589,7 @@ auto XojPageView::onKeyPressEvent(GdkEventKey* event) -> bool {
     return false;
 }
 
-auto XojPageView::onKeyReleaseEvent(GdkEventKey* event) -> bool {
+auto XojPageView::onKeyReleaseEvent(GdkEvent* event) -> bool {
     if (this->textEditor && this->textEditor->onKeyReleaseEvent(event)) {
         return true;
     }

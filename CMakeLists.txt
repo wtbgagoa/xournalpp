@@ -100,8 +100,8 @@ add_definitions (-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32)
 add_includes_ldflags ("${Glib_LDFLAGS}" "${Glib_INCLUDE_DIRS}")
 
 # GTK+
-pkg_check_modules (GTK REQUIRED "gtk+-3.0 >= 3.18.9")
-add_definitions (-DGDK_VERSION_MIN_REQUIRED=GDK_VERSION_3_18)
+pkg_check_modules (GTK REQUIRED "gtk4 >= 4.0")
+add_definitions (-DGDK_VERSION_MIN_REQUIRED=GDK_VERSION_4_0)
 add_includes_ldflags ("${GTK_LDFLAGS}" "${GTK_INCLUDE_DIRS}")
 
 # GThread

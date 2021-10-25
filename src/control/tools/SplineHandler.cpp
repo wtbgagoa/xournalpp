@@ -55,7 +55,7 @@ void SplineHandler::draw(cairo_t* cr) {
     cairo_set_source_rgb(cr, 1, 0, 0);                             // use red color for first knot
     cairo_move_to(cr, firstKnot.x + radius, firstKnot.y);          // move to start point of circle arc;
     cairo_arc(cr, firstKnot.x, firstKnot.y, radius, 0, 2 * M_PI);  // draw circle
-    if (dist < radius && this->getKnotCount() > 1) {  // current point lies within the circle around the first knot
+    if (dist<radius&& this->getKnotCount()> 1) {  // current point lies within the circle around the first knot
         cairo_fill(cr);
     } else {
         cairo_stroke(cr);
@@ -64,10 +64,10 @@ void SplineHandler::draw(cairo_t* cr) {
     // draw dynamically changing segment
     cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);  // use gray color
     const Point& cp1 = Point(lastKnot.x + lastTangent.x, lastKnot.y + lastTangent.y);
-    const Point& cp2 = (dist < radius && this->getKnotCount() > 1) ?
+    const Point& cp2 = (dist<radius&& this->getKnotCount()> 1) ?
                                Point(firstKnot.x - firstTangent.x, firstKnot.y - firstTangent.y) :
                                this->currPoint;
-    const Point& otherKnot = (dist < radius && this->getKnotCount() > 1) ? this->buttonDownPoint : this->currPoint;
+    const Point& otherKnot = (dist<radius&& this->getKnotCount()> 1) ? this->buttonDownPoint : this->currPoint;
     SplineSegment changingSegment = SplineSegment(lastKnot, cp1, cp2, otherKnot);
     changingSegment.draw(cr);
 
@@ -100,16 +100,19 @@ constexpr double SCALE_AMOUNT = 1.05;
 constexpr double MAX_TANGENT_LENGTH = 2000.0;
 constexpr double MIN_TANGENT_LENGTH = 1.0;
 
-auto SplineHandler::onKeyEvent(GdkEventKey* event) -> bool {
-    if (!stroke ||
-        event->type != GDK_KEY_PRESS && event->keyval != GDK_KEY_Escape) {  // except for escape key only act on key
-                                                                            // press event, not on key release event
+auto SplineHandler::onKeyEvent(GdkEvent* event) -> bool {
+    auto state = gdk_event_get_modifier_state(event);
+    auto keyval = gdk_key_event_get_keyval(event);
+    if (!stroke || gdk_event_get_event_type(event) != GDK_KEY_PRESS &&
+                           keyval != GDK_KEY_Escape) {  // except for escape key only act on key
+                                                        // press event, not on key release event
         return false;
     }
 
     Rectangle<double> rect = this->computeRepaintRectangle();
 
-    switch (event->keyval) {
+
+    switch (keyval) {
         case GDK_KEY_Escape: {
             this->redrawable->repaintRect(rect.x, rect.y, rect.width, rect.height);
             this->finalizeSpline();
@@ -145,7 +148,7 @@ auto SplineHandler::onKeyEvent(GdkEventKey* event) -> bool {
         }
         case GDK_KEY_r:
         case GDK_KEY_R: {  // r like "rotate"
-            double angle = (event->state & GDK_SHIFT_MASK) ? -ROTATE_AMOUNT : ROTATE_AMOUNT;
+            double angle = (state & GDK_SHIFT_MASK) ? -ROTATE_AMOUNT : ROTATE_AMOUNT;
             double xOld = this->tangents.back().x;
             double yOld = this->tangents.back().y;
             double xNew = cos(angle * M_PI / 180) * xOld + sin(angle * M_PI / 180) * yOld;
@@ -160,9 +163,9 @@ auto SplineHandler::onKeyEvent(GdkEventKey* event) -> bool {
             double yOld = this->tangents.back().y;
             double length = 2 * sqrt(pow(xOld, 2) + pow(yOld, 2));
             double factor = 1;
-            if ((event->state & GDK_SHIFT_MASK) && length >= MIN_TANGENT_LENGTH) {
+            if ((state & GDK_SHIFT_MASK) && length >= MIN_TANGENT_LENGTH) {
                 factor = 1 / SCALE_AMOUNT;
-            } else if (!(event->state & GDK_SHIFT_MASK) && length <= MAX_TANGENT_LENGTH) {
+            } else if (!(state & GDK_SHIFT_MASK) && length <= MAX_TANGENT_LENGTH) {
                 factor = SCALE_AMOUNT;
             }
             double xNew = xOld * factor;
@@ -361,9 +364,7 @@ void SplineHandler::updateStroke() {
     // convert collection of segments to stroke
     stroke->deletePointsFrom(0);
     for (auto s: segments) {
-        for (auto p: s.toPointSequence()) {
-            stroke->addPoint(p);
-        }
+        for (auto p: s.toPointSequence()) { stroke->addPoint(p); }
     }
     if (!segments.empty()) {
         stroke->addPoint(segments.back().secondKnot);

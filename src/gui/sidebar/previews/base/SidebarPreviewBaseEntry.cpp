@@ -16,7 +16,8 @@ SidebarPreviewBaseEntry::SidebarPreviewBaseEntry(SidebarPreviewBase* sidebar, co
     g_mutex_init(&this->drawingMutex);
 
     updateSize();
-    gtk_widget_set_events(widget, GDK_EXPOSURE_MASK);
+    // TODO (gtk4): Add EventControler
+    // gtk_widget_set_events(widget, GDK_EXPOSURE_MASK);
 
     g_signal_connect(this->widget, "draw", G_CALLBACK(drawCallback), this);
 
@@ -31,7 +32,7 @@ SidebarPreviewBaseEntry::~SidebarPreviewBaseEntry() {
     this->sidebar->getControl()->getScheduler()->removeSidebar(this);
     this->page = nullptr;
 
-    gtk_widget_destroy(this->widget);
+    g_object_unref(this->widget);
     this->widget = nullptr;
 
     if (this->crBuffer) {

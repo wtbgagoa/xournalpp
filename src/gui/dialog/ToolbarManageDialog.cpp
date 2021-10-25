@@ -5,6 +5,7 @@
 #include "gui/toolbarMenubar/model/ToolbarData.h"
 #include "gui/toolbarMenubar/model/ToolbarModel.h"
 
+#include "GtkDialogUtil.h"
 #include "i18n.h"
 
 enum { COLUMN_STRING, COLUMN_BOLD, COLUMN_POINTER, COLUMN_EDITABLE, N_COLUMNS };
@@ -178,6 +179,6 @@ void ToolbarManageDialog::treeSelectionChangedCallback(GtkTreeSelection* selecti
 
 void ToolbarManageDialog::show(GtkWindow* parent) {
     gtk_window_set_transient_for(GTK_WINDOW(this->window), parent);
-    gtk_dialog_run(GTK_DIALOG(this->window));
+    wait_for_gtk_dialog_result(GTK_DIALOG(this->window));
     gtk_widget_hide(this->window);
 }

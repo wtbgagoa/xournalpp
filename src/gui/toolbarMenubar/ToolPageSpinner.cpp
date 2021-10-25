@@ -46,12 +46,12 @@ void ToolPageSpinner::updateLabels() {
             gtk_label_set_text(GTK_LABEL(lbVerticalPdfPage), FS(_F("PDF {1}") % this->pdfPage).c_str());
             if (gtk_widget_get_parent(this->lbVerticalPdfPage) == nullptr) {
                 // re-add pdf label if it has been removed previously
-                gtk_box_pack_start(GTK_BOX(box), this->lbVerticalPdfPage, false, false, 0);
+                gtk_box_append(GTK_BOX(box), this->lbVerticalPdfPage);
                 gtk_widget_show(this->lbVerticalPdfPage);
             }
         } else {
             if (gtk_widget_get_parent(this->lbVerticalPdfPage) != nullptr) {
-                gtk_container_remove(GTK_CONTAINER(box), this->lbVerticalPdfPage);
+                gtk_container_remove(GTK_BOX(box), this->lbVerticalPdfPage);
             }
         }
     }
@@ -63,7 +63,7 @@ auto ToolPageSpinner::getNewToolIcon() -> GtkWidget* {
     return gtk_image_new_from_icon_name(iconNameHelper.iconName("page-spinner").c_str(), GTK_ICON_SIZE_SMALL_TOOLBAR);
 }
 
-auto ToolPageSpinner::newItem() -> GtkToolItem* {
+auto ToolPageSpinner::newItem() -> GtkButton* {
     if (this->pageSpinner->hasWidget()) {
         this->pageSpinner->removeWidget();
     }
@@ -102,11 +102,11 @@ auto ToolPageSpinner::newItem() -> GtkToolItem* {
     }
     this->box = gtk_box_new(orientation, 1);
     g_object_ref_sink(this->box);
-    gtk_box_pack_start(GTK_BOX(box), pageLabel, false, false, 7);
-    gtk_box_pack_start(GTK_BOX(box), spinner, false, false, 0);
-    gtk_box_pack_start(GTK_BOX(box), this->lbPageNo, false, false, 7);
+    gtk_box_append(GTK_BOX(box), pageLabel, false, false, 7);
+    gtk_box_append(GTK_BOX(box), spinner, false, false, 0);
+    gtk_box_append(GTK_BOX(box), this->lbPageNo, false, false, 7);
 
-    GtkToolItem* it = gtk_tool_item_new();
+    GtkButton* it = gtk_widget_new();
     gtk_container_add(GTK_CONTAINER(it), box);
 
     updateLabels();
@@ -114,7 +114,7 @@ auto ToolPageSpinner::newItem() -> GtkToolItem* {
     return it;
 }
 
-auto ToolPageSpinner::createItem(bool horizontal) -> GtkToolItem* {
+auto ToolPageSpinner::createItem(bool horizontal) -> GtkButton* {
     this->orientation = horizontal ? GTK_ORIENTATION_HORIZONTAL : GTK_ORIENTATION_VERTICAL;
 
     this->item = createTmpItem(horizontal);
@@ -122,8 +122,8 @@ auto ToolPageSpinner::createItem(bool horizontal) -> GtkToolItem* {
     return this->item;
 }
 
-auto ToolPageSpinner::createTmpItem(bool horizontal) -> GtkToolItem* {
-    GtkToolItem* item = AbstractToolItem::createTmpItem(horizontal);
+auto ToolPageSpinner::createTmpItem(bool horizontal) -> GtkButton* {
+    GtkButton* item = AbstractToolItem::createTmpItem(horizontal);
     g_object_ref(item);
     return item;
 }

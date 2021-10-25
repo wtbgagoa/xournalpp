@@ -14,7 +14,8 @@ include_directories (
 add_subdirectory (xoj-preview-extractor)
 
 # Used for both util and xournalpp targets
-add_definitions(-g -Wreturn-type -Wuninitialized -Wunused-value -Wunused-variable -Wconversion)
+#add_definitions(-g -Wreturn-type -Wuninitialized -Wunused-value -Wunused-variable -Wconversion)
+add_definitions(-Wno-narrowing)
 
 if (NOT WIN32 AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
   set(xournalpp_LDFLAGS ${xournalpp_LDFLAGS} -rdynamic)
@@ -24,7 +25,7 @@ option (DEBUG_COMPILE "Pass -Wall to CXX_FLAGS" OFF)
 mark_as_advanced (FORCE DEBUG_COMPILE)
 
 if (DEBUG_COMPILE)
-  add_definitions (-Wall)
+#  add_definitions (-Wall)
 endif (DEBUG_COMPILE)
 
 if (DEV_ENABLE_GCOV)

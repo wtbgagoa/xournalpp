@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstdlib>
 
+#include <gdk/gdk.h>
 #include <unistd.h>
 
 #include "Color.h"
@@ -36,8 +37,9 @@ static auto execInUiThreadCallback(CallbackUiData* cb) -> bool {
  */
 void Util::execInUiThread(std::function<void()>&& callback, gint priority) {
     // Note: nullptr = GDestroyNotify notify.
-    gdk_threads_add_idle_full(priority, reinterpret_cast<GSourceFunc>(execInUiThreadCallback),
-                              new CallbackUiData(std::move(callback)), nullptr);
+    g_idle_add_full(priority, 
+        reinterpret_cast<GSourceFunc>(execInUiThreadCallback),
+        new CallbackUiData(std::move(callback)), nullptr);
 }
 
 void Util::cairo_set_source_rgbi(cairo_t* cr, Color color) {

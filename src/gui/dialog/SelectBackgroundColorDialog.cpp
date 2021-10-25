@@ -2,6 +2,7 @@
 
 #include "control/Control.h"
 
+#include "GtkDialogUtil.h"
 #include "Util.h"
 #include "i18n.h"
 
@@ -82,9 +83,7 @@ void SelectBackgroundColorDialog::storeLastUsedValuesInSettings() {
     SElement& el = settings->getCustomElement("lastUsedPageBgColor");
 
     // Move all colors one step back
-    for (int i = LAST_BACKGROUND_COLOR_COUNT - 1; i > 0; i--) {
-        lastBackgroundColors[i] = lastBackgroundColors[i - 1];
-    }
+    for (int i = LAST_BACKGROUND_COLOR_COUNT - 1; i > 0; i--) { lastBackgroundColors[i] = lastBackgroundColors[i - 1]; }
 
     lastBackgroundColors[0] = newColor;
 
@@ -115,9 +114,7 @@ void SelectBackgroundColorDialog::show(GtkWindow* parent) {
     gtk_color_chooser_add_palette(GTK_COLOR_CHOOSER(dialog), GTK_ORIENTATION_HORIZONTAL, 9, lastBackgroundColors.size(),
                                   lastBackgroundColors.data());
 
-
-    int response = gtk_dialog_run(GTK_DIALOG(dialog));
-    if (response == GTK_RESPONSE_OK) {
+    if (int response = wait_for_gtk_dialog_result(GTK_DIALOG(dialog)); response == GTK_RESPONSE_OK) {
         GdkRGBA color;
         gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(dialog), &color);
         this->selected = Util::GdkRGBA_to_argb(color);
@@ -125,5 +122,5 @@ void SelectBackgroundColorDialog::show(GtkWindow* parent) {
         storeLastUsedValuesInSettings();
     }
 
-    gtk_widget_destroy(dialog);
+    gtk_window_destroy(GTK_WINDOW(dialog));
 }

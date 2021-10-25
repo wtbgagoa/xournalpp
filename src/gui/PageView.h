@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <gdk/gdk.h>
+
 #include "gui/inputdevices/PositionInputData.h"
 #include "model/PageListener.h"
 #include "model/PageRef.h"
@@ -40,11 +42,11 @@ public:
 public:
     void updatePageSize(double width, double height);
 
-    virtual void rerenderPage();
-    virtual void rerenderRect(double x, double y, double width, double height);
+    void rerenderPage() override;
+    void rerenderRect(double x, double y, double width, double height) override;
 
-    virtual void repaintPage();
-    virtual void repaintArea(double x1, double y1, double x2, double y2);
+    void repaintPage() override;
+    void repaintArea(double x1, double y1, double x2, double y2) override;
 
     void setSelected(bool selected);
 
@@ -56,8 +58,8 @@ public:
 
     bool searchTextOnPage(std::string& text, int* occures, double* top);
 
-    bool onKeyPressEvent(GdkEventKey* event);
-    bool onKeyReleaseEvent(GdkEventKey* event);
+    bool onKeyPressEvent(/* GdkKeyEvent */ GdkEvent* event);
+    bool onKeyReleaseEvent(/* GdkKeyEvent */ GdkEvent* event);
 
     bool cut();
     bool copy();
@@ -67,7 +69,7 @@ public:
 
     void resetShapeRecognizer();
 
-    void deleteViewBuffer();
+    void deleteViewBuffer() override;
 
     /**
      * Returns whether this PageView contains the
@@ -170,7 +172,7 @@ public:  // listener
     void elementChanged(Element* elem);
 
 private:
-    void handleScrollEvent(GdkEventButton* event);
+    void handleScrollEvent(GdkButtonEvent* event);
 
     void startText(double x, double y);
 

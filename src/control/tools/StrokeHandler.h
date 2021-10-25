@@ -44,7 +44,7 @@ public:
     void onButtonReleaseEvent(const PositionInputData& pos);
     void onButtonPressEvent(const PositionInputData& pos);
     void onButtonDoublePressEvent(const PositionInputData& pos);
-    bool onKeyEvent(GdkEventKey* event);
+    bool onKeyEvent(GdkEvent* event);
     /**
      * Reset the shape recognizer, only implemented by drawing instances,
      * but needs to be in the base interface.

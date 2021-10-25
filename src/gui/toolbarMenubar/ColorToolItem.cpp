@@ -8,6 +8,7 @@
 #include "gui/toolbarMenubar/icon/ColorSelectImage.h"
 #include "model/ToolbarColorNames.h"
 
+#include "GtkDialogUtil.h"
 #include "StringUtils.h"
 #include "Util.h"
 #include "i18n.h"
@@ -49,7 +50,7 @@ void ColorToolItem::actionSelected(ActionGroup group, ActionType action) {
     inUpdate = true;
     if (this->group == group && this->item) {
         if (isSelector()) {
-            gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(this->item), isSelector());
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(this->item), isSelector());
         }
         enableColor(toolHandler->getColor());
     }
@@ -64,11 +65,11 @@ void ColorToolItem::enableColor(Color color) {
 
         this->color = color;
         if (GTK_IS_TOGGLE_BUTTON(this->item)) {
-            gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(this->item), false);
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(this->item), false);
         }
     } else {
         if (this->item) {
-            gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(this->item), this->color == color);
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(this->item), this->color == color);
         }
     }
 }
@@ -94,14 +95,14 @@ void ColorToolItem::showColorchooser() {
     GtkWidget* dialog = gtk_color_chooser_dialog_new(_("Select color"), parent);
     gtk_color_chooser_set_use_alpha(GTK_COLOR_CHOOSER(dialog), false);
 
-    int response = gtk_dialog_run(GTK_DIALOG(dialog));
+    int response = wait_for_gtk_dialog_result(GTK_DIALOG(dialog));
     if (response == GTK_RESPONSE_OK) {
         GdkRGBA color;
         gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(dialog), &color);
         this->color = Util::GdkRGBA_to_argb(color);
     }
 
-    gtk_widget_destroy(dialog);
+    gtk_window_destroy(GTK_WINDOW(dialog));
 }
 
 /**
@@ -129,7 +130,7 @@ void ColorToolItem::enable(bool enabled) {
     }
 }
 
-void ColorToolItem::activated(GdkEvent* event, GtkMenuItem* menuitem, GtkToolButton* toolbutton) {
+void ColorToolItem::activated(GdkEvent* event, GtkButton* menuitem, GtkButton* toolbutton) {
     if (inUpdate) {
         return;
     }
@@ -144,16 +145,15 @@ void ColorToolItem::activated(GdkEvent* event, GtkMenuItem* menuitem, GtkToolBut
     inUpdate = false;
 }
 
-auto ColorToolItem::newItem() -> GtkToolItem* {
+auto ColorToolItem::newItem() -> GtkWidget* {
     this->icon = new ColorSelectImage(this->color, !isSelector());
 
-    GtkToolItem* it = gtk_toggle_tool_button_new();
+    GtkWidget* it = gtk_toggle_button_new();
 
     const gchar* name = this->name.c_str();
-    gtk_tool_item_set_tooltip_text(GTK_TOOL_ITEM(it), name);
-    gtk_tool_button_set_label(GTK_TOOL_BUTTON(it), name);
-
-    gtk_tool_button_set_icon_widget(GTK_TOOL_BUTTON(it), this->icon->getWidget());
+    gtk_widget_set_tooltip_text(it, name);
+    gtk_button_set_label(GTK_BUTTON(it), name);
+    gtk_button_set_child(GTK_BUTTON(it), this->icon->getWidget());
 
     return it;
 }

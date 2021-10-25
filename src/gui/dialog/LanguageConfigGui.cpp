@@ -27,9 +27,8 @@ const char* PACKAGE_LOCALE_DIR = p.c_str();
 LanguageConfigGui::LanguageConfigGui(GladeSearchpath* gladeSearchPath, GtkWidget* w, Settings* settings):
         GladeGui(gladeSearchPath, "settingsLanguageConfig.glade", "offscreenwindow"), settings(settings) {
     auto dropdown = get("languageSettingsDropdown");
-    gtk_container_remove(GTK_CONTAINER(getWindow()), dropdown);
-    gtk_container_add(GTK_CONTAINER(w), dropdown);
-    gtk_widget_show_all(dropdown);
+    gtk_window_set_child(GTK_WINDOW(getWindow()), nullptr);
+    gtk_box_append(GTK_BOX(w), dropdown);
 
     // Fetch available locales
     try {

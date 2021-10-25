@@ -3,6 +3,7 @@
 #include "control/settings/Settings.h"
 #include "plugin/PluginController.h"
 
+#include "GtkDialogUtil.h"
 #include "PluginDialogEntry.h"
 
 
@@ -22,9 +23,7 @@ void PluginDialog::saveSettings() {
     std::string pluginDisabled;
 
     // Save plugin settings
-    for (auto&& bcg: this->plugins) {
-        bcg->saveSettings(pluginEnabled, pluginDisabled);
-    }
+    for (auto&& bcg: this->plugins) { bcg->saveSettings(pluginEnabled, pluginDisabled); }
 
     settings->setPluginEnabled(pluginEnabled);
     settings->setPluginDisabled(pluginDisabled);
@@ -32,7 +31,7 @@ void PluginDialog::saveSettings() {
 
 void PluginDialog::show(GtkWindow* parent) {
     gtk_window_set_transient_for(GTK_WINDOW(this->window), parent);
-    int returnCode = gtk_dialog_run(GTK_DIALOG(this->window));
+    int returnCode = wait_for_gtk_dialog_result(GTK_DIALOG(this->window));
     gtk_widget_hide(this->window);
 
     if (returnCode == 2) {

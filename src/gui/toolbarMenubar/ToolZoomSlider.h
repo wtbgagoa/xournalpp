@@ -34,7 +34,7 @@ public:
     static void sliderChanged(GtkRange* range, ToolZoomSlider* self);
     static bool sliderButtonPress(GtkRange* range, GdkEvent* event, ToolZoomSlider* self);
     static bool sliderButtonRelease(GtkRange* range, GdkEvent* event, ToolZoomSlider* self);
-    static bool sliderHoverScroll(GtkWidget* range, GdkEventScroll* event, ToolZoomSlider* self);
+    static bool sliderHoverScroll(GtkWidget* range, /* GdkEventScroll */ GdkEvent* event, ToolZoomSlider* self);
     static gchar* sliderFormatValue(GtkRange* range, gdouble value, ToolZoomSlider* self);
 
     virtual void zoomChanged();
@@ -43,12 +43,12 @@ public:
 
     // Should be called when the window size changes
     void updateScaleMarks();
-    virtual GtkToolItem* createItem(bool horizontal);
-    virtual GtkToolItem* createTmpItem(bool horizontal);
+    virtual GtkButton* createItem(bool horizontal);
+    virtual GtkButton* createTmpItem(bool horizontal);
 
 protected:
     virtual void enable(bool enabled);
-    virtual GtkToolItem* newItem();
+    virtual GtkWidget* newItem();
     virtual GtkWidget* getNewToolIcon();
 
 private:

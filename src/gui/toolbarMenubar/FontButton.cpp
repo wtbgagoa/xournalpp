@@ -6,6 +6,7 @@
 
 #include <config.h>
 
+#include "PathUtil.h"
 #include "i18n.h"
 
 using std::string;
@@ -17,12 +18,10 @@ FontButton::FontButton(ActionHandler* handler, GladeGui* gui, string id, ActionT
     this->description = std::move(description);
 }
 
-FontButton::~FontButton() = default;
-
-void FontButton::activated(GdkEvent* event, GtkMenuItem* menuitem, GtkToolButton* toolbutton) {
+void FontButton::activated(GdkEvent* event, GtkWidget* menuitem, GtkButton* toolbutton) {
     GtkFontButton* button = GTK_FONT_BUTTON(fontButton);
 
-    string name = gtk_font_button_get_font_name(button);
+    string name = Util::GOwned<char[]>(gtk_font_chooser_get_font(GTK_FONT_CHOOSER(button))).get();
 
     auto pos = name.find_last_of(' ');
     this->font.setName(name.substr(0, pos));
@@ -38,7 +37,7 @@ void FontButton::setFontFontButton(GtkWidget* fontButton, XojFont& font) {
     fontSizeStream.imbue(std::locale("C"));
     fontSizeStream << font.getSize();
     string name = font.getName() + " " + fontSizeStream.str();
-    gtk_font_button_set_font_name(button, name.c_str());
+    gtk_font_chooser_set_font(GTK_FONT_CHOOSER(button), name.c_str());
 }
 
 void FontButton::setFont(XojFont& font) {
@@ -61,11 +60,9 @@ auto FontButton::getFont() -> XojFont {
 
 auto FontButton::getToolDisplayName() -> string { return _("Font"); }
 
-auto FontButton::getNewToolIcon() -> GtkWidget* {
-    return gtk_image_new_from_icon_name("font-x-generic", GTK_ICON_SIZE_SMALL_TOOLBAR);
-}
+auto FontButton::getNewToolIcon() -> GtkWidget* { return gtk_image_new_from_icon_name("font-x-generic"); }
 
-auto FontButton::createItem(bool horizontal) -> GtkToolItem* {
+auto FontButton::createItem(bool horizontal) -> GtkWidget* {
     if (this->item) {
         return this->item;
     }
@@ -76,56 +73,41 @@ auto FontButton::createItem(bool horizontal) -> GtkToolItem* {
     return this->item;
 }
 
-auto FontButton::createTmpItem(bool horizontal) -> GtkToolItem* {
+auto FontButton::createTmpItem(bool horizontal) -> GtkWidget* {
     GtkWidget* fontButton = newFontButton();
-
-    GtkToolItem* it = gtk_tool_item_new();
-
-    gtk_container_add(GTK_CONTAINER(it), fontButton);
-    gtk_tool_item_set_tooltip_text(it, this->description.c_str());
-    gtk_tool_item_set_homogeneous(GTK_TOOL_ITEM(it), false);
+    gtk_widget_set_tooltip_text(fontButton, this->description.c_str());
 
     if (!this->font.getName().empty()) {
         setFontFontButton(fontButton, this->font);
     }
 
-    gtk_widget_show_all(GTK_WIDGET(it));
-    return it;
+    return fontButton;
 }
 
 void FontButton::showFontDialog() {
     if (this->fontButton == nullptr) {
         newItem();
     }
-
-    gtk_button_clicked(GTK_BUTTON(this->fontButton));
 }
 
 auto FontButton::newFontButton() -> GtkWidget* {
     GtkWidget* w = gtk_font_button_new();
-    gtk_widget_show(w);
     gtk_font_button_set_use_font(GTK_FONT_BUTTON(w), true);
-    gtk_button_set_focus_on_click(GTK_BUTTON(w), false);
-
     return w;
 }
 
-auto FontButton::newItem() -> GtkToolItem* {
+auto FontButton::newItem() -> GtkWidget* {
     if (this->fontButton) {
         g_object_unref(this->fontButton);
     }
-    GtkToolItem* it = gtk_tool_item_new();
-
     this->fontButton = newFontButton();
-    gtk_container_add(GTK_CONTAINER(it), this->fontButton);
-    gtk_tool_item_set_tooltip_text(it, this->description.c_str());
-    gtk_tool_item_set_homogeneous(GTK_TOOL_ITEM(it), false);
+    gtk_widget_set_tooltip_text(this->fontButton, this->description.c_str());
 
-    g_signal_connect(this->fontButton, "font_set", G_CALLBACK(&toolButtonCallback), this);
+    g_signal_connect(this->fontButton, "font-set", G_CALLBACK(&toolButtonCallback), this);
 
     if (!this->font.getName().empty()) {
         setFont(this->font);
     }
 
-    return it;
+    return this->fontButton;
 }

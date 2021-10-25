@@ -75,7 +75,7 @@ TextEditor::~TextEditor() {
     }
 
     g_object_unref(this->buffer);
-    gtk_widget_destroy(this->textWidget);
+    gtk_window_destroy(GTK_WINDOW(this->textWidget));
 
     if (this->blinkTimeout) {
         g_source_remove(this->blinkTimeout);
@@ -251,10 +251,12 @@ auto TextEditor::imDeleteSurroundingCallback(GtkIMContext* context, gint offset,
     return true;
 }
 
-auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
-    if (gtk_bindings_activate_event(G_OBJECT(this->textWidget), event)) {
-        return true;
-    }
+auto TextEditor::onKeyPressEvent(/*GdkKeyEvent*/ GdkEvent* event) -> bool {
+    // GtkShortcutAction *self, GtkShortcutActionFlags flags, GtkWidget *widget, GVariant *args)
+    // TODO (gtk4, fabian): fix that?
+    // if (gtk_shortcut_action_activate(G_OBJECT(this->textWidget), event)) {
+    //     return true;
+    // }
 
     bool retval = false;
     bool obscure = false;
@@ -264,6 +266,9 @@ auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
     GtkTextMark* insert = gtk_text_buffer_get_insert(this->buffer);
     gtk_text_buffer_get_iter_at_mark(this->buffer, &iter, insert);
     bool canInsert = gtk_text_iter_can_insert(&iter, true);
+
+    auto event_state = gdk_event_get_modifier_state(event);
+    auto event_keyval = gdk_key_event_get_keyval(event);
     if (gtk_im_context_filter_keypress(this->imContext, event)) {
         this->needImReset = true;
         if (!canInsert) {
@@ -271,24 +276,24 @@ auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
         }
         obscure = canInsert;
         retval = true;
-    } else if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+    } else if ((event_state & modifiers) == GDK_CONTROL_MASK) {
         // Bold text
-        if (event->keyval == GDK_KEY_b || event->keyval == GDK_KEY_B) {
+        if (event_keyval == GDK_KEY_b || event_keyval == GDK_KEY_B) {
             toggleBold();
             return true;
         }
         // Increase text size
-        if (event->keyval == GDK_KEY_plus) {
+        if (event_keyval == GDK_KEY_plus) {
             incSize();
             return true;
         }
         // Decrease text size
-        if (event->keyval == GDK_KEY_minus) {
+        if (event_keyval == GDK_KEY_minus) {
             decSize();
             return true;
         }
-    } else if (event->keyval == GDK_KEY_Return || event->keyval == GDK_KEY_ISO_Enter ||
-               event->keyval == GDK_KEY_KP_Enter) {
+    } else if (event_keyval == GDK_KEY_Return || event_keyval == GDK_KEY_ISO_Enter ||
+               event_keyval == GDK_KEY_KP_Enter) {
         this->resetImContext();
         iMCommitCallback(nullptr, "\n", this);
 
@@ -296,9 +301,8 @@ auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
         retval = true;
     }
     // Pass through Tab as literal tab, unless Control is held down
-    else if ((event->keyval == GDK_KEY_Tab || event->keyval == GDK_KEY_KP_Tab ||
-              event->keyval == GDK_KEY_ISO_Left_Tab) &&
-             !(event->state & GDK_CONTROL_MASK)) {
+    else if ((event_keyval == GDK_KEY_Tab || event_keyval == GDK_KEY_KP_Tab || event_keyval == GDK_KEY_ISO_Left_Tab) &&
+             !(event_state & GDK_CONTROL_MASK)) {
         resetImContext();
         iMCommitCallback(nullptr, "\t", this);
         obscure = true;
@@ -315,7 +319,7 @@ auto TextEditor::onKeyPressEvent(GdkEventKey* event) -> bool {
     return retval;
 }
 
-auto TextEditor::onKeyReleaseEvent(GdkEventKey* event) -> bool {
+auto TextEditor::onKeyReleaseEvent(/*GdkKeyEvent*/ GdkEvent* event) -> bool {
     GtkTextIter iter;
 
     GtkTextMark* insert = gtk_text_buffer_get_insert(this->buffer);
@@ -845,12 +849,12 @@ auto TextEditor::getSelection() -> string {
 }
 
 void TextEditor::copyToCliboard() {
-    GtkClipboard* clipboard = gtk_widget_get_clipboard(this->widget, GDK_SELECTION_CLIPBOARD);
+    GdkClipboard* clipboard = gtk_widget_get_clipboard(this->widget);
     gtk_text_buffer_copy_clipboard(this->buffer, clipboard);
 }
 
 void TextEditor::cutToClipboard() {
-    GtkClipboard* clipboard = gtk_widget_get_clipboard(this->widget, GDK_SELECTION_CLIPBOARD);
+    GdkClipboard* clipboard = gtk_widget_get_clipboard(this->widget);
     gtk_text_buffer_cut_clipboard(this->buffer, clipboard, true);
 
     this->repaintEditor();
@@ -858,11 +862,11 @@ void TextEditor::cutToClipboard() {
 }
 
 void TextEditor::pasteFromClipboard() {
-    GtkClipboard* clipboard = gtk_widget_get_clipboard(this->widget, GDK_SELECTION_CLIPBOARD);
+    GdkClipboard* clipboard = gtk_widget_get_clipboard(this->widget);
     gtk_text_buffer_paste_clipboard(this->buffer, clipboard, nullptr, true);
 }
 
-void TextEditor::bufferPasteDoneCallback(GtkTextBuffer* buffer, GtkClipboard* clipboard, TextEditor* te) {
+void TextEditor::bufferPasteDoneCallback(GtkTextBuffer* buffer, GdkClipboard* clipboard, TextEditor* te) {
     te->repaintEditor();
     te->contentsChanged(true);
 }
@@ -890,11 +894,11 @@ void TextEditor::repaintCursor() {
  */
 auto TextEditor::blinkCallback(TextEditor* te) -> gint {
     if (te->cursorVisible) {
-        te->blinkTimeout = gdk_threads_add_timeout(te->cursorBlinkTime * CURSOR_OFF_MULTIPLIER / CURSOR_DIVIDER,
-                                                   reinterpret_cast<GSourceFunc>(blinkCallback), te);
+        te->blinkTimeout = g_timeout_add(te->cursorBlinkTime * CURSOR_OFF_MULTIPLIER / CURSOR_DIVIDER,
+                                         reinterpret_cast<GSourceFunc>(blinkCallback), te);
     } else {
-        te->blinkTimeout = gdk_threads_add_timeout(te->cursorBlinkTime * CURSOR_ON_MULTIPLIER / CURSOR_DIVIDER,
-                                                   reinterpret_cast<GSourceFunc>(blinkCallback), te);
+        te->blinkTimeout = g_timeout_add(te->cursorBlinkTime * CURSOR_ON_MULTIPLIER / CURSOR_DIVIDER,
+                                         reinterpret_cast<GSourceFunc>(blinkCallback), te);
     }
 
     te->cursorVisible = !te->cursorVisible;
@@ -1048,7 +1052,7 @@ void TextEditor::paint(cairo_t* cr, GdkRectangle* repaintRect, double zoom) {
     cairo_stroke(cr);
 
     // Notify the IM of the app's window and cursor position.
-    gtk_im_context_set_client_window(this->imContext, gtk_widget_get_window(this->widget));
+    gtk_im_context_set_client_widget(this->imContext, this->widget);
     GdkRectangle cursorRect;
     cursorRect.x = static_cast<int>(zoom * x0 + x1 + zoom * cX);
     cursorRect.y = static_cast<int>(zoom * y0 + y1 + zoom * cY);

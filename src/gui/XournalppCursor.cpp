@@ -155,14 +155,14 @@ void XournalppCursor::setCursorBusy(bool busy) {
 
     this->busy = busy;
 
+    GdkSurface* window = gtk_native_get_surface(gtk_widget_get_native(win->getWindow()));
     if (busy) {
-        GdkWindow* window = gtk_widget_get_window(win->getWindow());
-        GdkCursor* cursor = gdk_cursor_new_from_name(gdk_window_get_display(window), cssCursors[CRSR_BUSY].cssName);
-        gdk_window_set_cursor(window, cursor);
+        GdkCursor* cursor = gdk_cursor_new_from_name(cssCursors[CRSR_BUSY].cssName, nullptr);
+        gdk_surface_set_cursor(window, cursor);
         g_object_unref(cursor);
     } else {
-        if (gtk_widget_get_window(win->getWindow())) {
-            gdk_window_set_cursor(gtk_widget_get_window(win->getWindow()), nullptr);
+        if (window) {
+            gdk_surface_set_cursor(window, nullptr);
         }
     }
 
@@ -299,10 +299,10 @@ void XournalppCursor::updateCursor() {
         }
     }
 
-    GdkWindow* window = gtk_widget_get_window(xournal->getWidget());
+    GdkSurface* window = gtk_native_get_surface(gtk_widget_get_native(xournal->getWidget()));
     if (window) {
         if (cursor != nullptr) {
-            gdk_window_set_cursor(window, cursor);
+            gdk_surface_set_cursor(window, cursor);
         }
         gtk_widget_set_sensitive(xournal->getWidget(), !this->busy);
     }
@@ -349,12 +349,15 @@ auto XournalppCursor::getResizeCursor(double deltaAngle) -> GdkCursor* {
     }
 
     cairo_destroy(cr);
+
     GdkPixbuf* pixbuf = xoj_pixbuf_get_from_surface(crCursor, 0, 0, RESIZE_CURSOR_SIZE, RESIZE_CURSOR_SIZE);
-    cairo_surface_destroy(crCursor);
-    GdkCursor* cursor =
-            gdk_cursor_new_from_pixbuf(gtk_widget_get_display(control->getWindow()->getXournal()->getWidget()), pixbuf,
-                                       RESIZE_CURSOR_SIZE / 2, RESIZE_CURSOR_SIZE / 2);
+    GdkTexture* texture = gdk_texture_new_for_pixbuf(pixbuf);
+    GdkCursor* cursor = gdk_cursor_new_from_texture(texture, RESIZE_CURSOR_SIZE / 2, RESIZE_CURSOR_SIZE / 2, nullptr);
+
+    g_object_unref(texture);
     g_object_unref(pixbuf);
+    cairo_surface_destroy(crCursor);
+
     return cursor;
 }
 
@@ -379,8 +382,13 @@ auto XournalppCursor::getEraserCursor() -> GdkCursor* {
     cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_stroke(cr);
     cairo_destroy(cr);
-    GdkCursor* cursor =
-            gdk_cursor_new_from_surface(gdk_display_get_default(), surface, cursorSize / 2.0, cursorSize / 2.0);
+
+    GdkPixbuf* pixbuf = xoj_pixbuf_get_from_surface(surface, 0, 0, cursorSize, cursorSize);
+    GdkTexture* texture = gdk_texture_new_for_pixbuf(pixbuf);
+    GdkCursor* cursor = gdk_cursor_new_from_texture(texture, cursorSize / 2.0, cursorSize / 2.0, nullptr);
+
+    g_object_unref(texture);
+    g_object_unref(pixbuf);
     cairo_surface_destroy(surface);
     return cursor;
 }
@@ -483,9 +491,10 @@ auto XournalppCursor::createHighlighterOrPenCursor(int size, double alpha) -> Gd
     cairo_fill(cr);
     cairo_destroy(cr);
     GdkPixbuf* pixbuf = xoj_pixbuf_get_from_surface(crCursor, 0, 0, width, height);
+    GdkTexture* texture = gdk_texture_new_for_pixbuf(pixbuf);
     cairo_surface_destroy(crCursor);
-    GdkCursor* cursor = gdk_cursor_new_from_pixbuf(
-            gtk_widget_get_display(control->getWindow()->getXournal()->getWidget()), pixbuf, centerX, centerY);
+    GdkCursor* cursor = gdk_cursor_new_from_texture(texture, centerX, centerY, nullptr);
+    g_object_unref(texture);
     g_object_unref(pixbuf);
     return cursor;
 }
@@ -506,17 +515,15 @@ void XournalppCursor::setCursor(int cursorID) {
         return;
     }
 
-    GdkWindow* window = gtk_widget_get_window(xournal->getWidget());
+    GdkSurface* window = gtk_native_get_surface(gtk_widget_get_native(xournal->getWidget()));
     if (!window) {
         return;
     }
 
-    GdkCursor* cursor = gdk_cursor_new_from_name(gdk_window_get_display(window), cssCursors[cursorID].cssName);
-    if (cursor == nullptr)  // failed to get a cursor, try backup cursor.
-    {
+    GdkCursor* cursor = gdk_cursor_new_from_name(cssCursors[cursorID].cssName, nullptr);
+    if (cursor == nullptr) {  // failed to get a cursor, try backup cursor.
         if (cursorID != CRSR_nullptr) {
-            cursor = gdk_cursor_new_from_name(gdk_window_get_display(window), cssCursors[cursorID].cssBackupName);
-
+            cursor = gdk_cursor_new_from_name(cssCursors[cursorID].cssBackupName, nullptr);
             // Null cursor is ok but not wanted ... warn user
             if (cursor == nullptr) {
                 if (CRSR_nullptr == this->currentCursor) {
@@ -530,8 +537,7 @@ void XournalppCursor::setCursor(int cursorID) {
     }
 
     this->currentCursor = cursorID;
-    gdk_window_set_cursor(gtk_widget_get_window(xournal->getWidget()), cursor);
-    gdk_window_set_cursor(window, cursor);
+    gdk_surface_set_cursor(window, cursor);
     if (cursor) {
         g_object_unref(cursor);
     }
@@ -604,9 +610,10 @@ auto XournalppCursor::createCustomDrawDirCursor(int size, bool shift, bool ctrl)
 
     cairo_destroy(cr);
     GdkPixbuf* pixbuf = xoj_pixbuf_get_from_surface(crCursor, 0, 0, width, height);
+    auto* texture = gdk_texture_new_for_pixbuf(pixbuf);
     cairo_surface_destroy(crCursor);
-    GdkCursor* cursor = gdk_cursor_new_from_pixbuf(
-            gtk_widget_get_display(control->getWindow()->getXournal()->getWidget()), pixbuf, centerX, centerY);
+    GdkCursor* cursor = gdk_cursor_new_from_texture(texture, centerX, centerY, nullptr);
+    g_object_unref(texture);
     g_object_unref(pixbuf);
 
     return cursor;

@@ -44,19 +44,17 @@ public:
 
     auto getWidth() const -> int { return this->currentWidth; }
 
-    auto placeAt(int y, GtkLayout* layout) -> int {
+    auto placeAt(int y, GtkFixed* layout) -> int {
         int height = 0;
         int x = 0;
 
-        for (SidebarPreviewBaseEntry* p: this->list) {
-            height = std::max(height, p->getHeight());
-        }
+        for (SidebarPreviewBaseEntry* p: this->list) { height = std::max(height, p->getHeight()); }
 
 
         for (SidebarPreviewBaseEntry* p: this->list) {
             int currentY = (height - p->getHeight()) / 2;
 
-            gtk_layout_move(layout, p->getWidget(), x, y + currentY);
+            gtk_fixed_move(layout, p->getWidget(), x, y + currentY);
 
             x += p->getWidth();
         }
@@ -86,7 +84,7 @@ void SidebarLayout::layout(SidebarPreviewBase* sidebar) {
         if (row.isSpaceFor(p)) {
             row.add(p);
         } else {
-            y += row.placeAt(y, GTK_LAYOUT(sidebar->iconViewPreview));
+            y += row.placeAt(y, GTK_FIXED(sidebar->iconViewPreview));
 
             width = std::max(width, row.getWidth());
 
@@ -96,12 +94,13 @@ void SidebarLayout::layout(SidebarPreviewBase* sidebar) {
     }
 
     if (row.getCount() != 0) {
-        y += row.placeAt(y, GTK_LAYOUT(sidebar->iconViewPreview));
+        y += row.placeAt(y, GTK_FIXED(sidebar->iconViewPreview));
 
         width = std::max(width, row.getWidth());
 
         row.clear();
     }
 
-    gtk_layout_set_size(GTK_LAYOUT(sidebar->iconViewPreview), width, y);
+    // Todo (gtk4): find replacement
+    // gtk_fixed_set_size(GTK_FIXED(sidebar->iconViewPreview), width, y);
 }

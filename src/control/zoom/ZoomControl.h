@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
 
 #include "model/DocumentListener.h"
 
@@ -33,6 +34,8 @@ class Control;
 class XojPageView;
 class ZoomListener;
 class DocumentListener;
+
+struct GdkEventTouchpadPinch;
 
 class ZoomControl: public DocumentListener {
 public:
@@ -176,7 +179,7 @@ private:
     void zoomPresentation();
 
     friend bool onWindowSizeChangedEvent(GtkWidget* widget, GdkEvent* event, ZoomControl* zoom);
-    friend bool onScrolledwindowMainScrollEvent(GtkWidget* widget, GdkEventScroll* event, ZoomControl* zoom);
+    friend bool onScrolledwindowMainScrollEvent(GtkWidget* widget, GtkButton* event, ZoomControl* zoom);
     friend bool onTouchpadPinchEvent(GtkWidget* widget, GdkEventTouchpadPinch* event, ZoomControl* zoom);
 
 private:

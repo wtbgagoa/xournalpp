@@ -42,7 +42,7 @@ auto ToolZoomSlider::sliderButtonRelease(GtkRange* range, GdkEvent* event, ToolZ
     return false;
 }
 
-auto ToolZoomSlider::sliderHoverScroll(GtkWidget* range, GdkEventScroll* event, ToolZoomSlider* self) -> bool {
+auto ToolZoomSlider::sliderHoverScroll(GtkWidget* range, GdkEvent* event, ToolZoomSlider* self) -> bool {
     gint64 now = g_get_monotonic_time();
     if (now > self->sliderHoverScrollLastTime + 500) {
         self->zoom->setZoomFitMode(false);
@@ -89,7 +89,7 @@ void ToolZoomSlider::updateScaleMarks() {
                        horizontal ? GTK_POS_BOTTOM : GTK_POS_RIGHT, nullptr);
 }
 
-auto ToolZoomSlider::createItem(bool horizontal) -> GtkToolItem* {
+auto ToolZoomSlider::createItem(bool horizontal) -> GtkButton* {
     this->horizontal = horizontal;
     this->item = newItem();
     g_object_ref(this->item);
@@ -98,14 +98,14 @@ auto ToolZoomSlider::createItem(bool horizontal) -> GtkToolItem* {
         gtk_tool_item_set_homogeneous(GTK_TOOL_ITEM(this->item), false);
     }
 
-    if (GTK_IS_TOOL_BUTTON(this->item) || GTK_IS_TOGGLE_TOOL_BUTTON(this->item)) {
+    if (GTK_IS_BUTTON(this->item) || GTK_IS_TOGGLE_BUTTON(this->item)) {
         g_signal_connect(this->item, "clicked", G_CALLBACK(&toolButtonCallback), this);
     }
     return this->item;
 }
 
-auto ToolZoomSlider::createTmpItem(bool horizontal) -> GtkToolItem* {
-    GtkToolItem* item = newItem();
+auto ToolZoomSlider::createTmpItem(bool horizontal) -> GtkButton* {
+    GtkButton* item = newItem();
     g_object_ref(item);
 
     if (GTK_IS_TOOL_ITEM(item)) {
@@ -114,7 +114,6 @@ auto ToolZoomSlider::createTmpItem(bool horizontal) -> GtkToolItem* {
 
     // no slider marks, but don't matter, because it's only a preview
 
-    gtk_widget_show_all(GTK_WIDGET(item));
     return item;
 }
 
@@ -127,8 +126,8 @@ void ToolZoomSlider::enable(bool enabled) {
     }
 }
 
-auto ToolZoomSlider::newItem() -> GtkToolItem* {
-    GtkToolItem* it = gtk_tool_item_new();
+auto ToolZoomSlider::newItem() -> GtkButton* {
+    GtkButton* it = gtk_widget_new();
 
     if (this->slider) {
         g_signal_handlers_disconnect_by_func(this->slider, (void*)(sliderChanged), this);
