@@ -4,8 +4,7 @@
 
 #include <config.h>
 
-#include "gui/widgets/gtkmenutooltogglebutton.h"
-
+#include "Gtk4Util.h"
 #include "ToolMenuHandler.h"
 #include "i18n.h"
 
@@ -14,7 +13,6 @@ using std::string;
 class ToolDrawType {
 public:
     ToolDrawType(string name, string icon, ActionType type): name(std::move(name)), icon(std::move(icon)), type(type) {}
-
 
     string name;
     string icon;
@@ -25,7 +23,7 @@ ToolDrawCombocontrol::ToolDrawCombocontrol(ToolMenuHandler* toolMenuHandler, Act
         ToolButton(handler, std::move(id), ACTION_TOOL_DRAW_RECT, GROUP_RULER, false,
                    toolMenuHandler->iconName("combo-drawing-type"), _("Drawing Type Combo")),
         toolMenuHandler(toolMenuHandler) {
-    setPopupMenu(gtk_popover_menu_new());
+    setPopupMenu(gtk_popover_new());
 
     drawTypes.push_back(
             new ToolDrawType(_("Draw Rectangle"), toolMenuHandler->iconName("draw-rect"), ACTION_TOOL_DRAW_RECT));
@@ -52,14 +50,11 @@ ToolDrawCombocontrol::~ToolDrawCombocontrol() {
 }
 
 void ToolDrawCombocontrol::createMenuItem(const string& name, const string& icon, ActionType type) {
-    GtkWidget* menuItem = gtk_widget_new();
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-    gtk_box_append(GTK_BOX(box), gtk_image_new_from_icon_name(icon.c_str(), GTK_ICON_SIZE_SMALL_TOOLBAR));
+    gtk_box_append(GTK_BOX(box), gtk_image_new_from_icon_name(icon.c_str()));
     gtk_box_append(GTK_BOX(box), gtk_label_new(name.c_str()));
-    gtk_widget_set_child(GTK_WIDGET(menuItem), box);
-
-    gtk_widget_set_child(GTK_WIDGET(popupMenu), menuItem);
-    toolMenuHandler->registerMenupoint(menuItem, type, GROUP_RULER);
+    gtk_popover_menu_add_child(GTK_POPOVER_MENU(popupMenu), box, name.c_str());
+    toolMenuHandler->registerMenupoint(box, type, GROUP_RULER);
 }
 
 void ToolDrawCombocontrol::selected(ActionGroup group, ActionType action) {
@@ -77,25 +72,25 @@ void ToolDrawCombocontrol::selected(ActionGroup group, ActionType action) {
     for (ToolDrawType* t: drawTypes) {
         if (action == t->type && this->action != t->type) {
             this->action = t->type;
-            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), t->icon.c_str(), GTK_ICON_SIZE_SMALL_TOOLBAR);
+            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), t->icon.c_str());
             description = t->name;
             break;
         }
     }
 
-    gtk_widget_set_tooltip_text(GTK_TOOL_ITEM(item), description.c_str());
+    gtk_widget_set_tooltip_text(GTK_WIDGET(item), description.c_str());
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(this->item)) != (this->action == action)) {
         this->toolToggleButtonActive = (this->action == action);
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(this->item), this->toolToggleButtonActive);
     }
 }
 
-auto ToolDrawCombocontrol::newItem() -> GtkButton* {
-    labelWidget = gtk_label_new(_("Draw Rectangle"));
-    iconWidget = gtk_image_new_from_icon_name(drawTypes[0]->icon.c_str(), GTK_ICON_SIZE_SMALL_TOOLBAR);
+auto ToolDrawCombocontrol::newItem() -> GtkWidget* {
+    iconWidget = gtk_image_new_from_icon_name(drawTypes[0]->icon.c_str());
 
-    GtkButton* it = gtktoggle_button_new(iconWidget, _("Draw Rectangle"));
-    gtk_button_set_label_widget(GTK_BUTTON(it), labelWidget);
-    gtktoggle_button_set_menu(GTK_MENU_TOOL_TOGGLE_BUTTON(it), popupMenu);
+    GtkWidget* it = gtk_button_new();
+    gtk_menu_button_set_child(GTK_MENU_BUTTON(it), iconWidget);
+    gtk_menu_button_set_label(GTK_MENU_BUTTON(it), _("Draw Rectangle"));
+    gtk_menu_button_set_popover(GTK_MENU_BUTTON(it), popupMenu);
     return it;
 }

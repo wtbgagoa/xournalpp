@@ -73,8 +73,7 @@ void ToolZoomSlider::zoomRangeValuesChanged() { updateScaleMarks(); }
 auto ToolZoomSlider::getToolDisplayName() -> std::string { return _("Zoom Slider"); }
 
 auto ToolZoomSlider::getNewToolIcon() -> GtkWidget* {
-    return gtk_image_new_from_icon_name(this->iconNameHelper.iconName("zoom-slider").c_str(),
-                                        GTK_ICON_SIZE_SMALL_TOOLBAR);
+    return gtk_image_new_from_icon_name(this->iconNameHelper.iconName("zoom-slider").c_str());
 }
 
 // Should be called when the window size changes
@@ -89,31 +88,20 @@ void ToolZoomSlider::updateScaleMarks() {
                        horizontal ? GTK_POS_BOTTOM : GTK_POS_RIGHT, nullptr);
 }
 
-auto ToolZoomSlider::createItem(bool horizontal) -> GtkButton* {
+auto ToolZoomSlider::createItem(bool horizontal) -> GtkWidget* {
     this->horizontal = horizontal;
     this->item = newItem();
     g_object_ref(this->item);
-
-    if (GTK_IS_TOOL_ITEM(this->item)) {
-        gtk_tool_item_set_homogeneous(GTK_TOOL_ITEM(this->item), false);
-    }
-
     if (GTK_IS_BUTTON(this->item) || GTK_IS_TOGGLE_BUTTON(this->item)) {
         g_signal_connect(this->item, "clicked", G_CALLBACK(&toolButtonCallback), this);
     }
     return this->item;
 }
 
-auto ToolZoomSlider::createTmpItem(bool horizontal) -> GtkButton* {
-    GtkButton* item = newItem();
+auto ToolZoomSlider::createTmpItem(bool horizontal) -> GtkWidget* {
+    GtkWidget* item = newItem();
     g_object_ref(item);
-
-    if (GTK_IS_TOOL_ITEM(item)) {
-        gtk_tool_item_set_homogeneous(GTK_TOOL_ITEM(item), false);
-    }
-
     // no slider marks, but don't matter, because it's only a preview
-
     return item;
 }
 
@@ -126,9 +114,7 @@ void ToolZoomSlider::enable(bool enabled) {
     }
 }
 
-auto ToolZoomSlider::newItem() -> GtkButton* {
-    GtkButton* it = gtk_widget_new();
-
+auto ToolZoomSlider::newItem() -> GtkWidget* {
     if (this->slider) {
         g_signal_handlers_disconnect_by_func(this->slider, (void*)(sliderChanged), this);
         g_signal_handlers_disconnect_by_func(this->slider, (void*)(sliderButtonPress), this);
@@ -140,7 +126,7 @@ auto ToolZoomSlider::newItem() -> GtkButton* {
     double sliderMin = scaleFunc(DEFAULT_ZOOM_MIN);
     double sliderMax = scaleFunc(DEFAULT_ZOOM_MAX);
     // slider has 100 steps
-    double sliderStep = (sliderMax - sliderMin) / 100;
+    double sliderStep = (sliderMax - sliderMin) / 100.0;
 
     if (this->horizontal) {
         this->slider = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, sliderMin, sliderMax, sliderStep);
@@ -164,8 +150,6 @@ auto ToolZoomSlider::newItem() -> GtkButton* {
         gtk_widget_set_size_request(GTK_WIDGET(this->slider), 16, 120);
     }
 
-    gtk_container_add(GTK_CONTAINER(it), this->slider);
-
     sliderChangingByZoomControlOrInit = true;
     double slider_range = scaleFunc(this->zoom->getZoomReal());
     gtk_range_set_value(GTK_RANGE(this->slider), slider_range);
@@ -173,7 +157,7 @@ auto ToolZoomSlider::newItem() -> GtkButton* {
 
     updateScaleMarks();
 
-    return it;
+    return this->slider;
 }
 
 auto ToolZoomSlider::scaleFunc(double x) -> double { return log(x - SCALE_LOG_OFFSET); }

@@ -4,8 +4,7 @@
 
 #include <config.h>
 
-#include "gui/widgets/gtkmenutooltogglebutton.h"
-
+#include "Gtk4Util.h"
 #include "ToolMenuHandler.h"
 #include "i18n.h"
 
@@ -15,7 +14,7 @@ ToolSelectCombocontrol::ToolSelectCombocontrol(ToolMenuHandler* toolMenuHandler,
         ToolButton(handler, std::move(id), ACTION_TOOL_SELECT_RECT, GROUP_TOOL, true,
                    toolMenuHandler->iconName("combo-selection"), _("Selection Combo")),
         toolMenuHandler(toolMenuHandler),
-        popup(gtk_menu_new()) {
+        popup(gtk_popover_new()) {
     addMenuitem(_("Select Rectangle"), toolMenuHandler->iconName("select-rect"), ACTION_TOOL_SELECT_RECT, GROUP_TOOL);
     addMenuitem(_("Select Region"), toolMenuHandler->iconName("select-lasso"), ACTION_TOOL_SELECT_REGION, GROUP_TOOL);
     addMenuitem(_("Select Object"), toolMenuHandler->iconName("object-select"), ACTION_TOOL_SELECT_OBJECT, GROUP_TOOL);
@@ -29,16 +28,13 @@ ToolSelectCombocontrol::~ToolSelectCombocontrol() = default;
 void ToolSelectCombocontrol::addMenuitem(const string& text, const string& icon, ActionType type, ActionGroup group) {
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     GtkWidget* label = gtk_label_new(text.c_str());
-    GtkWidget* menuItem = gtk_menu_item_new();
 
-    gtk_box_append(GTK_BOX(box), gtk_image_new_from_icon_name(icon.c_str(), GTK_ICON_SIZE_SMALL_TOOLBAR));
+    gtk_box_append(GTK_BOX(box), gtk_image_new_from_icon_name(icon.c_str()));
     gtk_label_set_xalign(GTK_LABEL(label), 0.0);
     gtk_box_append(GTK_BOX(box), label);
 
-    gtk_container_add(GTK_CONTAINER(menuItem), box);
-    gtk_container_add(GTK_CONTAINER(popup), menuItem);
-
-    toolMenuHandler->registerMenupoint(menuItem, type, group);
+    gtk_popover_set_child(GTK_POPOVER(popup), label);
+    toolMenuHandler->registerMenupoint(label, type, group);
 }
 
 void ToolSelectCombocontrol::selected(ActionGroup group, ActionType action) {
@@ -52,30 +48,26 @@ void ToolSelectCombocontrol::selected(ActionGroup group, ActionType action) {
 
         if (action == ACTION_TOOL_SELECT_RECT && this->action != ACTION_TOOL_SELECT_RECT) {
             this->action = ACTION_TOOL_SELECT_RECT;
-            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), toolMenuHandler->iconName("select-rect").c_str(),
-                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
+            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), toolMenuHandler->iconName("select-rect").c_str());
 
             description = _("Select Rectangle");
         } else if (action == ACTION_TOOL_SELECT_REGION && this->action != ACTION_TOOL_SELECT_REGION) {
             this->action = ACTION_TOOL_SELECT_REGION;
-            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), toolMenuHandler->iconName("select-lasso").c_str(),
-                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
+            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), toolMenuHandler->iconName("select-lasso").c_str());
 
             description = _("Select Region");
         } else if (action == ACTION_TOOL_SELECT_OBJECT && this->action != ACTION_TOOL_SELECT_OBJECT) {
             this->action = ACTION_TOOL_SELECT_OBJECT;
-            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), toolMenuHandler->iconName("object-select").c_str(),
-                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
+            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), toolMenuHandler->iconName("object-select").c_str());
 
             description = _("Select Object");
         } else if (action == ACTION_TOOL_PLAY_OBJECT && this->action != ACTION_TOOL_PLAY_OBJECT) {
             this->action = ACTION_TOOL_PLAY_OBJECT;
-            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), toolMenuHandler->iconName("object-play").c_str(),
-                                         GTK_ICON_SIZE_SMALL_TOOLBAR);
+            gtk_image_set_from_icon_name(GTK_IMAGE(iconWidget), toolMenuHandler->iconName("object-play").c_str());
 
             description = _("Play Object");
         }
-        gtk_widget_set_tooltip_text(GTK_TOOL_ITEM(item), description.c_str());
+        gtk_widget_set_tooltip_text(GTK_WIDGET(item), description.c_str());
 
 
         if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(this->item)) != (this->action == action)) {
@@ -85,15 +77,13 @@ void ToolSelectCombocontrol::selected(ActionGroup group, ActionType action) {
     }
 }
 
-auto ToolSelectCombocontrol::newItem() -> GtkButton* {
-    GtkButton* it = nullptr;
-
+auto ToolSelectCombocontrol::newItem() -> GtkWidget* {
     labelWidget = gtk_label_new(_("Select Rectangle"));
-    iconWidget =
-            gtk_image_new_from_icon_name(toolMenuHandler->iconName("select-rect").c_str(), GTK_ICON_SIZE_SMALL_TOOLBAR);
+    iconWidget = gtk_image_new_from_icon_name(toolMenuHandler->iconName("select-rect").c_str());
 
-    it = gtktoggle_button_new(iconWidget, "test0");
-    gtk_button_set_label_widget(GTK_BUTTON(it), labelWidget);
-    gtktoggle_button_set_menu(GTK_MENU_TOOL_TOGGLE_BUTTON(it), popupMenu);
+    auto it = gtk_menu_button_new();
+    gtk_menu_button_set_label(GTK_MENU_BUTTON(it), "test0");
+    gtk_menu_button_set_child(GTK_MENU_BUTTON(it), iconWidget);
+    gtk_menu_button_set_popover(GTK_MENU_BUTTON(it), popupMenu);
     return it;
 }

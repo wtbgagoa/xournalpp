@@ -37,19 +37,19 @@ public:
     static bool sliderHoverScroll(GtkWidget* range, /* GdkEventScroll */ GdkEvent* event, ToolZoomSlider* self);
     static gchar* sliderFormatValue(GtkRange* range, gdouble value, ToolZoomSlider* self);
 
-    virtual void zoomChanged();
-    virtual void zoomRangeValuesChanged();
-    virtual std::string getToolDisplayName();
+    void zoomChanged() override;
+    void zoomRangeValuesChanged() override;
+    std::string getToolDisplayName() override;
 
     // Should be called when the window size changes
     void updateScaleMarks();
-    virtual GtkButton* createItem(bool horizontal);
-    virtual GtkButton* createTmpItem(bool horizontal);
+    GtkWidget* createItem(bool horizontal) override;
+    GtkWidget* createTmpItem(bool horizontal) override;
 
 protected:
-    virtual void enable(bool enabled);
-    virtual GtkWidget* newItem();
-    virtual GtkWidget* getNewToolIcon();
+    void enable(bool enabled) override;
+    GtkWidget* newItem() override;
+    GtkWidget* getNewToolIcon() override;
 
 private:
     static double scaleFunc(double x);

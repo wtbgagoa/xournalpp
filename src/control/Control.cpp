@@ -2265,7 +2265,7 @@ void Control::setCurrentState(int state) {
     Util::execInUiThread([=]() { gtk_progress_bar_set_fraction(this->pgState, gdouble(state) / this->maxState); });
 }
 
-auto Control::save(bool synchron) -> bool {
+auto Control::save(bool synchron) -> void {
     // clear selection before saving
     clearSelectionEndText();
 
@@ -2273,27 +2273,27 @@ auto Control::save(bool synchron) -> bool {
     fs::path filepath = this->doc->getFilepath();
     this->doc->unlock();
 
-    if (filepath.empty()) {
-        if (!showSaveDialog()) {
-            return false;
+    auto saveFn = [=]() {
+        auto* job = new SaveJob(this);
+        bool result = true;
+        if (synchron) {
+            result = job->save();
+            unblock();
+            this->resetSavedStatus();
+        } else {
+            this->scheduler->addJob(job, JOB_PRIORITY_URGENT);
         }
-    }
+        job->unref();
+    };
 
-    auto* job = new SaveJob(this);
-    bool result = true;
-    if (synchron) {
-        result = job->save();
-        unblock();
-        this->resetSavedStatus();
+    if (filepath.empty()) {
+        showSaveDialog(saveFn);
     } else {
-        this->scheduler->addJob(job, JOB_PRIORITY_URGENT);
+        saveFn();
     }
-    job->unref();
-
-    return result;
 }
 
-auto Control::showSaveDialog() -> bool {
+auto Control::showSaveDialog(std::function<void()> onSave) -> bool {
     GtkWidget* dialog =
             gtk_file_chooser_dialog_new(_("Save File"), getGtkWindow(), GTK_FILE_CHOOSER_ACTION_SAVE, _("_Cancel"),
                                         GTK_RESPONSE_CANCEL, _("_Save"), GTK_RESPONSE_OK, nullptr);
@@ -2316,7 +2316,7 @@ auto Control::showSaveDialog() -> bool {
 
     gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(this->getWindow()->getWindow()));
 
-    while (true) {
+    auto on_result = [=] {
         if (wait_for_gtk_dialog_result(GTK_DIALOG(dialog)) != GTK_RESPONSE_OK) {
             return false;
         }
@@ -2325,21 +2325,25 @@ auto Control::showSaveDialog() -> bool {
         Util::clearExtensions(fileTmp);
         fileTmp += ".xopp";
         // Since we add the extension after the OK button, we have to check manually on existing files
-        if (askToReplace(fileTmp)) {
+
+        if (Util:: = askToReplace(fileTmp)) {
             break;
         }
-    }
+    };
 
-    auto filename = Util::fromGFile(Util::GOwned<GFile>(gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dialog))).get());
+
+    while (true) {}
+}
+
+void Control::onSaveReplace(GtkWidget* fileChooser) {
+    auto filename =
+            Util::fromGFile(Util::GOwned<GFile>(gtk_file_chooser_get_file(GTK_FILE_CHOOSER(fileChooser))).get());
     settings->setLastSavePath(filename.parent_path());
-    gtk_window_destroy(GTK_WINDOW(dialog));
+    gtk_window_destroy(GTK_WINDOW(fileChooser));
 
     this->doc->lock();
-
     this->doc->setFilepath(filename);
     this->doc->unlock();
-
-    return true;
 }
 
 void Control::updateWindowTitle() {
@@ -2512,16 +2516,6 @@ void Control::initButtonTool() {
     }
 }
 
-auto Control::askToReplace(fs::path const& filepath) const -> bool {
-    if (fs::exists(filepath)) {
-        std::string msg = FS(FORMAT_STR("The file {1} already exists! Do you want to replace it?") %
-                             filepath.filename().u8string());
-        int res = XojMsgBox::replaceFileQuestion(getGtkWindow(), msg);
-        return res == GTK_RESPONSE_OK;
-    }
-    return true;
-}
-
 void Control::resetShapeRecognizer() {
     if (this->win) {
         this->win->getXournal()->resetShapeRecognizer();
@@ -2553,8 +2547,8 @@ void Control::clipboardPasteImage(GdkPaintable* img) {
     auto image = new Image();
     image->setImage(img);
 
-    auto width = 
-            static_cast<double>(gdk_paintable_get_intrinsic_width(img)) / settings->getDisplayDpi() * Util::DPI_NORMALIZATION_FACTOR;
+    auto width = static_cast<double>(gdk_paintable_get_intrinsic_width(img)) / settings->getDisplayDpi() *
+                 Util::DPI_NORMALIZATION_FACTOR;
     auto height = static_cast<double>(gdk_paintable_get_intrinsic_height(img)) / settings->getDisplayDpi() *
                   Util::DPI_NORMALIZATION_FACTOR;
 

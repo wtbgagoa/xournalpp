@@ -100,10 +100,6 @@ public:
      */
     bool close(bool allowDestroy = false, bool allowCancel = true);
 
-    // Asks user to replace an existing file when saving / exporting, since we add the extension
-    // after the OK, we need to check manually
-    bool askToReplace(fs::path const& filepath) const;
-
     void resetShapeRecognizer();
 
     // Menu edit
@@ -298,7 +294,7 @@ protected:
     void rotationSnappingToggle();
     void gridSnappingToggle();
 
-    bool showSaveDialog();
+    bool showSaveDialog(std::function<void()> onSave);
 
     void fileLoaded(int scrollToPage = -1);
 
